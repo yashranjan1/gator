@@ -12,14 +12,14 @@ type Config struct {
 	CurrentUser string `json:"current_user"`
 }
 
-func (c *Config) SetUser(username string) (int, error) {
+func (c *Config) SetUser(username string) error {
 	c.CurrentUser = username
 
 	err := Write(c)
 	if err != nil {
-		return fmt.Printf("Error: %v", err)
+		return err
 	}
-	return 0, nil
+	return nil
 }
 
 func Read() (Config, error) {

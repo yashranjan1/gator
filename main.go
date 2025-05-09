@@ -1,10 +1,14 @@
 package main
 
-import "fmt"
+import (
+	"fmt"
+	"os"
 
-import "os/user"
-
-import "github.com/yashranjan1/gator/internal/config"
+	"github.com/yashranjan1/gator/internal/command"
+	"github.com/yashranjan1/gator/internal/commands"
+	"github.com/yashranjan1/gator/internal/config"
+	"github.com/yashranjan1/gator/internal/state"
+)
 
 func main() {
 	conf, err := config.Read()
@@ -12,17 +16,39 @@ func main() {
 		fmt.Printf("Error: %v", err)
 	}
 
-	currentUser, err := user.Current()
-	if err != nil {
-		fmt.Printf("Error: %v", err)
+	s := state.State{
+		Config: &conf,
 	}
 
-	conf.SetUser(currentUser.Username)
-
-	conf, err = config.Read()
-	if err != nil {
-		fmt.Printf("Error: %v", err)
+	cmds := commands.Commands{
+		Callback: make(map[string]func(*state.State, command.Command) error),
 	}
-	fmt.Printf("%s: %s\n", "Url", conf.DBUrl)
-	fmt.Printf("%s: %s\n", "Username", conf.CurrentUser)
+
+	cmds.Register("login", handlerLogin)
+
+	args := os.Args
+
+	if len(args) < 2 {
+		fmt.Println("Error: Not enough arguments\n")
+		fmt.Println("Usage:\n")
+		fmt.Println("gator <COMMAND> [optional]")
+		os.Exit(1)
+	}
+
+	var cmdArgs []string
+
+	if len(args) > 2 {
+		cmdArgs = args[2:]
+	}
+
+	cmd := command.Command{
+		Name: args[1],
+		Args: cmdArgs,
+	}
+
+	err = cmds.Run(&s, cmd)
+	if err != nil {
+		fmt.Printf("Error: %v\n", err)
+		os.Exit(1)
+	}
 }

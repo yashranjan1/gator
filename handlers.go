@@ -66,7 +66,19 @@ func handleRegister(s *state.State, cmd command.Command) error {
 	}
 
 	fmt.Printf("SUCCESS: user \"%s\" created, exiting....", userCreated.Name)
+	return nil
+}
+
+func handleReset(s *state.State, cmd command.Command) error {
+	if len(cmd.Args) > 0 {
+		return errors.New("the reset handler expects no arguments")
+	}
+
+	err := s.DataBase.Reset(context.Background())
+
+	if err != nil {
+		return err
+	}
 
 	return nil
-
 }

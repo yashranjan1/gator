@@ -1,13 +1,17 @@
 package main
 
 import (
+	"database/sql"
 	"fmt"
 	"os"
 
 	"github.com/yashranjan1/gator/internal/command"
 	"github.com/yashranjan1/gator/internal/commands"
 	"github.com/yashranjan1/gator/internal/config"
+	"github.com/yashranjan1/gator/internal/database"
 	"github.com/yashranjan1/gator/internal/state"
+
+	_ "github.com/lib/pq"
 )
 
 func main() {
@@ -16,8 +20,15 @@ func main() {
 		fmt.Printf("Error: %v", err)
 	}
 
+	db, err := sql.Open("postgres", conf.DBUrl)
+	if err != nil {
+		fmt.Printf("Error: %v", err)
+	}
+	dbQueries := database.New(db)
+
 	s := state.State{
-		Config: &conf,
+		Config:   &conf,
+		DataBase: dbQueries,
 	}
 
 	cmds := commands.Commands{
@@ -25,12 +36,13 @@ func main() {
 	}
 
 	cmds.Register("login", handlerLogin)
+	cmds.Register("register", handleRegister)
 
 	args := os.Args
 
 	if len(args) < 2 {
-		fmt.Println("Error: Not enough arguments\n")
-		fmt.Println("Usage:\n")
+		fmt.Print("Error: Not enough arguments\n\n")
+		fmt.Print("Usage:\n\n")
 		fmt.Println("gator <COMMAND> [optional]")
 		os.Exit(1)
 	}
@@ -51,4 +63,5 @@ func main() {
 		fmt.Printf("Error: %v\n", err)
 		os.Exit(1)
 	}
+
 }

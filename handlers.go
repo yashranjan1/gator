@@ -82,3 +82,25 @@ func handleReset(s *state.State, cmd command.Command) error {
 
 	return nil
 }
+
+func handleList(s *state.State, cmd command.Command) error {
+	if len(cmd.Args) > 0 {
+		return errors.New("the list handler expects no arguments")
+	}
+
+	users, err := s.DataBase.GetUsers(context.Background())
+
+	if err != nil {
+		return err
+	}
+
+	for _, user := range users {
+		fmt.Printf("* %s", user)
+		if user == s.Config.CurrentUser {
+			fmt.Print(" (current)")
+		}
+		fmt.Println()
+	}
+
+	return nil
+}

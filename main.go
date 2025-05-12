@@ -41,6 +41,7 @@ func main() {
 	cmds.Register("users", handleList)
 	cmds.Register("agg", handleAggregate)
 	cmds.Register("addfeed", handlerAddFeed)
+	cmds.Register("feeds", handleListFeeds)
 
 	args := os.Args
 

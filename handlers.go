@@ -5,6 +5,8 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"os"
+	"text/tabwriter"
 	"time"
 
 	"github.com/google/uuid"
@@ -145,5 +147,24 @@ func handlerAddFeed(s *state.State, cmd command.Command) error {
 
 	fmt.Println("Feed added!")
 	fmt.Println(feed)
+	return nil
+}
+
+func handleListFeeds(s *state.State, cmd command.Command) error {
+	if len(cmd.Args) > 0 {
+		return errors.New("the feeds handle expects no arguments")
+	}
+
+	feeds, err := s.DataBase.GetFeeds(context.Background())
+	if err != nil {
+		return err
+	}
+
+	w := tabwriter.NewWriter(os.Stdout, 1, 1, 1, ' ', 0)
+	fmt.Fprintln(w, "Feed Name\tFeed URL\tUser Name")
+	for _, feed := range feeds {
+		fmt.Fprintf(w, "%s\t%s\t%s\n", feed.Feedname, feed.Url, feed.Username.String)
+	}
+	w.Flush()
 	return nil
 }

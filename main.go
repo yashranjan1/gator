@@ -39,6 +39,8 @@ func main() {
 	cmds.Register("register", handleRegister)
 	cmds.Register("reset", handleReset)
 	cmds.Register("users", handleList)
+	cmds.Register("agg", handleAggregate)
+	cmds.Register("addfeed", handlerAddFeed)
 
 	args := os.Args
 

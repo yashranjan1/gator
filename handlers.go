@@ -10,6 +10,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/yashranjan1/gator/internal/command"
 	"github.com/yashranjan1/gator/internal/database"
+	"github.com/yashranjan1/gator/internal/rss"
 	"github.com/yashranjan1/gator/internal/state"
 )
 
@@ -102,5 +103,47 @@ func handleList(s *state.State, cmd command.Command) error {
 		fmt.Println()
 	}
 
+	return nil
+}
+
+func handleAggregate(s *state.State, cmd command.Command) error {
+	if len(cmd.Args) > 0 {
+		return errors.New("the aggregate handler expects no arguments")
+	}
+
+	feed, err := rss.FetchFeed(context.Background(), "https://www.wagslane.dev/index.xml")
+
+	if err != nil {
+		return err
+	}
+
+	fmt.Println(feed)
+
+	return nil
+}
+
+func handlerAddFeed(s *state.State, cmd command.Command) error {
+	if len(cmd.Args) < 2 {
+		return errors.New("the addfeed handler expects 2 arguments, name and url")
+	}
+
+	user, err := s.DataBase.GetUserByName(context.Background(), s.Config.CurrentUser)
+	if err != nil {
+
+	}
+
+	params := database.CreateFeedParams{
+		Name:   cmd.Args[0],
+		Url:    cmd.Args[1],
+		UserID: user.ID,
+	}
+
+	feed, err := s.DataBase.CreateFeed(context.Background(), params)
+	if err != nil {
+		return err
+	}
+
+	fmt.Println("Feed added!")
+	fmt.Println(feed)
 	return nil
 }

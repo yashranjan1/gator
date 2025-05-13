@@ -124,17 +124,18 @@ func handleAggregate(s *state.State, cmd command.Command) error {
 	return nil
 }
 
-func handlerAddFeed(s *state.State, cmd command.Command) error {
+func handleAddFeed(s *state.State, cmd command.Command) error {
 	if len(cmd.Args) < 2 {
 		return errors.New("the addfeed handler expects 2 arguments, name and url")
 	}
 
 	user, err := s.DataBase.GetUserByName(context.Background(), s.Config.CurrentUser)
 	if err != nil {
-
+		return err
 	}
 
 	params := database.CreateFeedParams{
+		ID:     uuid.New(),
 		Name:   cmd.Args[0],
 		Url:    cmd.Args[1],
 		UserID: user.ID,
@@ -146,7 +147,23 @@ func handlerAddFeed(s *state.State, cmd command.Command) error {
 	}
 
 	fmt.Println("Feed added!")
-	fmt.Println(feed)
+	fmt.Printf("Name: %s\nUrl: %s\n", feed.Name, feed.Url)
+
+	followParams := database.CreateFeedFollowParams{
+		ID:        uuid.New(),
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
+		UserID:    user.ID,
+		FeedID:    feed.ID,
+	}
+
+	_, err = s.DataBase.CreateFeedFollow(context.Background(), followParams)
+	if err != nil {
+		return err
+	}
+
+	fmt.Println("Follow created for this feed")
+
 	return nil
 }
 
@@ -166,5 +183,68 @@ func handleListFeeds(s *state.State, cmd command.Command) error {
 		fmt.Fprintf(w, "%s\t%s\t%s\n", feed.Feedname, feed.Url, feed.Username.String)
 	}
 	w.Flush()
+	return nil
+}
+
+func handleFollow(s *state.State, cmd command.Command) error {
+	if len(cmd.Args) == 0 {
+		return errors.New("the follow handler expects 1 argument, the url")
+	}
+
+	feed, err := s.DataBase.GetFeedByUrl(context.Background(), cmd.Args[0])
+
+	if err == sql.ErrNoRows {
+		return errors.New("this feed does not exist, please add the feed before you try to follow it")
+	} else if err != nil {
+		return err
+	}
+
+	user, err := s.DataBase.GetUserByName(context.Background(), s.Config.CurrentUser)
+	if err != nil {
+		return err
+	}
+
+	params := database.CreateFeedFollowParams{
+		ID:        uuid.New(),
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
+		UserID:    user.ID,
+		FeedID:    feed.ID,
+	}
+
+	added, err := s.DataBase.CreateFeedFollow(context.Background(), params)
+
+	if err != nil {
+		return err
+	}
+
+	w := tabwriter.NewWriter(os.Stdout, 1, 1, 1, ' ', 0)
+	fmt.Println("SUCCESS: The following feed has been added to the following user")
+	fmt.Fprintln(w, "Feed Name\tUser Name")
+	fmt.Fprintf(w, "%s\t%s\n", added.FeedName, added.UserName)
+	w.Flush()
+
+	return nil
+}
+
+func handleFollowing(s *state.State, cmd command.Command) error {
+	if len(cmd.Args) > 0 {
+		return errors.New("the following handler expects no arguments")
+	}
+
+	user, err := s.DataBase.GetUserByName(context.Background(), s.Config.CurrentUser)
+	if err != nil {
+		return err
+	}
+
+	feeds, err := s.DataBase.GetFeedFollowsForUser(context.Background(), user.ID)
+	if err != nil {
+		return err
+	}
+
+	fmt.Printf("%s follows the following feeds:\n", user.Name)
+	for _, feed := range feeds {
+		fmt.Println(feed.Name.String)
+	}
 	return nil
 }

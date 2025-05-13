@@ -40,8 +40,10 @@ func main() {
 	cmds.Register("reset", handleReset)
 	cmds.Register("users", handleList)
 	cmds.Register("agg", handleAggregate)
-	cmds.Register("addfeed", handlerAddFeed)
+	cmds.Register("addfeed", handleAddFeed)
 	cmds.Register("feeds", handleListFeeds)
+	cmds.Register("follow", handleFollow)
+	cmds.Register("following", handleFollowing)
 
 	args := os.Args
 

@@ -124,14 +124,9 @@ func handleAggregate(s *state.State, cmd command.Command) error {
 	return nil
 }
 
-func handleAddFeed(s *state.State, cmd command.Command) error {
+func handleAddFeed(s *state.State, cmd command.Command, user database.User) error {
 	if len(cmd.Args) < 2 {
 		return errors.New("the addfeed handler expects 2 arguments, name and url")
-	}
-
-	user, err := s.DataBase.GetUserByName(context.Background(), s.Config.CurrentUser)
-	if err != nil {
-		return err
 	}
 
 	params := database.CreateFeedParams{
@@ -186,7 +181,7 @@ func handleListFeeds(s *state.State, cmd command.Command) error {
 	return nil
 }
 
-func handleFollow(s *state.State, cmd command.Command) error {
+func handleFollow(s *state.State, cmd command.Command, user database.User) error {
 	if len(cmd.Args) == 0 {
 		return errors.New("the follow handler expects 1 argument, the url")
 	}
@@ -196,11 +191,6 @@ func handleFollow(s *state.State, cmd command.Command) error {
 	if err == sql.ErrNoRows {
 		return errors.New("this feed does not exist, please add the feed before you try to follow it")
 	} else if err != nil {
-		return err
-	}
-
-	user, err := s.DataBase.GetUserByName(context.Background(), s.Config.CurrentUser)
-	if err != nil {
 		return err
 	}
 
@@ -227,14 +217,9 @@ func handleFollow(s *state.State, cmd command.Command) error {
 	return nil
 }
 
-func handleFollowing(s *state.State, cmd command.Command) error {
+func handleFollowing(s *state.State, cmd command.Command, user database.User) error {
 	if len(cmd.Args) > 0 {
 		return errors.New("the following handler expects no arguments")
-	}
-
-	user, err := s.DataBase.GetUserByName(context.Background(), s.Config.CurrentUser)
-	if err != nil {
-		return err
 	}
 
 	feeds, err := s.DataBase.GetFeedFollowsForUser(context.Background(), user.ID)

@@ -79,8 +79,24 @@ func (q *Queries) CreateFeedFollow(ctx context.Context, arg CreateFeedFollowPara
 	return i, err
 }
 
+const deleteFeedFollow = `-- name: DeleteFeedFollow :exec
+DELETE FROM feed_follows ff WHERE ff.user_id = $1 AND ff.feed_id = (
+    SELECT id FROM feeds f WHERE f.url = $2
+)
+`
+
+type DeleteFeedFollowParams struct {
+	UserID uuid.UUID
+	Url    string
+}
+
+func (q *Queries) DeleteFeedFollow(ctx context.Context, arg DeleteFeedFollowParams) error {
+	_, err := q.db.ExecContext(ctx, deleteFeedFollow, arg.UserID, arg.Url)
+	return err
+}
+
 const getFeedFollowsForUser = `-- name: GetFeedFollowsForUser :many
-SELECT feed_follows.id, created_at, updated_at, feed_follows.user_id, feed_id, feeds.id, name, url, feeds.user_id 
+SELECT feed_follows.id, created_at, updated_at, feed_follows.user_id, feed_id, feeds.id, name, url, feeds.user_id, last_fetched_at 
     FROM feed_follows 
     LEFT JOIN feeds
     ON feeds.id = feed_id
@@ -88,15 +104,16 @@ SELECT feed_follows.id, created_at, updated_at, feed_follows.user_id, feed_id, f
 `
 
 type GetFeedFollowsForUserRow struct {
-	ID        uuid.UUID
-	CreatedAt time.Time
-	UpdatedAt time.Time
-	UserID    uuid.UUID
-	FeedID    uuid.UUID
-	ID_2      uuid.NullUUID
-	Name      sql.NullString
-	Url       sql.NullString
-	UserID_2  uuid.NullUUID
+	ID            uuid.UUID
+	CreatedAt     time.Time
+	UpdatedAt     time.Time
+	UserID        uuid.UUID
+	FeedID        uuid.UUID
+	ID_2          uuid.NullUUID
+	Name          sql.NullString
+	Url           sql.NullString
+	UserID_2      uuid.NullUUID
+	LastFetchedAt sql.NullString
 }
 
 func (q *Queries) GetFeedFollowsForUser(ctx context.Context, userID uuid.UUID) ([]GetFeedFollowsForUserRow, error) {
@@ -118,6 +135,7 @@ func (q *Queries) GetFeedFollowsForUser(ctx context.Context, userID uuid.UUID) (
 			&i.Name,
 			&i.Url,
 			&i.UserID_2,
+			&i.LastFetchedAt,
 		); err != nil {
 			return nil, err
 		}

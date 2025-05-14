@@ -16,3 +16,10 @@ SELECT f.name as FeedName, f.url, u.name as UserName
 
 -- name: GetFeedByUrl :one
 SELECT * FROM feeds where url = $1;
+
+
+-- name: MarkFeedFetched :exec
+UPDATE feeds
+    SET last_fetched_at = $1,
+        updated_at = $1
+    WHERE id = $2;

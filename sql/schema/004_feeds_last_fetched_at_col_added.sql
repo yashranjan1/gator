@@ -1,6 +1,6 @@
 -- +goose Up
 ALTER TABLE feeds
-     ADD last_fetched_at VARCHAR;
+     ADD last_fetched_at timestamp;
 
 -- +goose Down
 ALTER TABLE feeds

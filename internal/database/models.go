@@ -14,9 +14,10 @@ import (
 type Feed struct {
 	ID            uuid.UUID
 	Name          string
+	UpdatedAt     time.Time
 	Url           string
 	UserID        uuid.UUID
-	LastFetchedAt sql.NullString
+	LastFetchedAt sql.NullTime
 }
 
 type FeedFollow struct {

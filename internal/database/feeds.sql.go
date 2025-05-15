@@ -8,32 +8,36 @@ package database
 import (
 	"context"
 	"database/sql"
+	"time"
 
 	"github.com/google/uuid"
 )
 
 const createFeed = `-- name: CreateFeed :one
-INSERT INTO feeds (id, name, url, user_id) 
+INSERT INTO feeds (id, name, updated_at, url, user_id) 
 VALUES ( 
     $1,
     $2,
     $3,
-    $4
+    $4,
+    $5
 ) 
-RETURNING id, name, url, user_id, last_fetched_at
+RETURNING id, name, updated_at, url, user_id, last_fetched_at
 `
 
 type CreateFeedParams struct {
-	ID     uuid.UUID
-	Name   string
-	Url    string
-	UserID uuid.UUID
+	ID        uuid.UUID
+	Name      string
+	UpdatedAt time.Time
+	Url       string
+	UserID    uuid.UUID
 }
 
 func (q *Queries) CreateFeed(ctx context.Context, arg CreateFeedParams) (Feed, error) {
 	row := q.db.QueryRowContext(ctx, createFeed,
 		arg.ID,
 		arg.Name,
+		arg.UpdatedAt,
 		arg.Url,
 		arg.UserID,
 	)
@@ -41,6 +45,7 @@ func (q *Queries) CreateFeed(ctx context.Context, arg CreateFeedParams) (Feed, e
 	err := row.Scan(
 		&i.ID,
 		&i.Name,
+		&i.UpdatedAt,
 		&i.Url,
 		&i.UserID,
 		&i.LastFetchedAt,
@@ -49,7 +54,7 @@ func (q *Queries) CreateFeed(ctx context.Context, arg CreateFeedParams) (Feed, e
 }
 
 const getFeedByUrl = `-- name: GetFeedByUrl :one
-SELECT id, name, url, user_id, last_fetched_at FROM feeds where url = $1
+SELECT id, name, updated_at, url, user_id, last_fetched_at FROM feeds where url = $1
 `
 
 func (q *Queries) GetFeedByUrl(ctx context.Context, url string) (Feed, error) {
@@ -58,6 +63,7 @@ func (q *Queries) GetFeedByUrl(ctx context.Context, url string) (Feed, error) {
 	err := row.Scan(
 		&i.ID,
 		&i.Name,
+		&i.UpdatedAt,
 		&i.Url,
 		&i.UserID,
 		&i.LastFetchedAt,
@@ -101,6 +107,27 @@ func (q *Queries) GetFeeds(ctx context.Context) ([]GetFeedsRow, error) {
 	return items, nil
 }
 
+const getNextFeedToFetch = `-- name: GetNextFeedToFetch :one
+SELECT id, name, updated_at, url, user_id, last_fetched_at 
+    FROM feeds
+    ORDER BY last_fetched_at ASC NULLS FIRST
+    LIMIT 1
+`
+
+func (q *Queries) GetNextFeedToFetch(ctx context.Context) (Feed, error) {
+	row := q.db.QueryRowContext(ctx, getNextFeedToFetch)
+	var i Feed
+	err := row.Scan(
+		&i.ID,
+		&i.Name,
+		&i.UpdatedAt,
+		&i.Url,
+		&i.UserID,
+		&i.LastFetchedAt,
+	)
+	return i, err
+}
+
 const markFeedFetched = `-- name: MarkFeedFetched :exec
 UPDATE feeds
     SET last_fetched_at = $1,
@@ -109,7 +136,7 @@ UPDATE feeds
 `
 
 type MarkFeedFetchedParams struct {
-	LastFetchedAt sql.NullString
+	LastFetchedAt sql.NullTime
 	ID            uuid.UUID
 }
 

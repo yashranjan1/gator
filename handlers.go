@@ -109,19 +109,22 @@ func handleList(s *state.State, cmd command.Command) error {
 }
 
 func handleAggregate(s *state.State, cmd command.Command) error {
-	if len(cmd.Args) > 0 {
-		return errors.New("the aggregate handler expects no arguments")
+	if len(cmd.Args) == 0 {
+		return errors.New("the aggregate handler expects 1 argument, a time interval")
 	}
 
-	feed, err := rss.FetchFeed(context.Background(), "https://www.wagslane.dev/index.xml")
-
+	duration, err := time.ParseDuration(cmd.Args[0])
 	if err != nil {
 		return err
 	}
 
-	fmt.Println(feed)
+	fmt.Println("Collecting feeds every " + cmd.Args[0])
 
-	return nil
+	ticker := time.NewTicker(duration)
+
+	for ; ; <-ticker.C {
+		scrapeFeeds(s)
+	}
 }
 
 func handleAddFeed(s *state.State, cmd command.Command, user database.User) error {
@@ -253,4 +256,36 @@ func handleUnfollow(s *state.State, cmd command.Command, user database.User) err
 	fmt.Println("feed successfully unfollowed!")
 
 	return nil
+}
+
+func scrapeFeeds(s *state.State) {
+	feed, err := s.DataBase.GetNextFeedToFetch(context.Background())
+	if err != nil {
+		fmt.Printf("Error getting next feed: %v\n", err)
+		return
+	}
+
+	markParams := database.MarkFeedFetchedParams{
+		LastFetchedAt: sql.NullTime{
+			Time:  time.Now(),
+			Valid: true,
+		},
+		ID: feed.ID,
+	}
+
+	err = s.DataBase.MarkFeedFetched(context.Background(), markParams)
+	if err != nil {
+		fmt.Printf("Error in marking the feed as fetched: %v\n", err)
+		return
+	}
+
+	feedData, err := rss.FetchFeed(context.Background(), feed.Url)
+	if err != nil {
+		fmt.Printf("Error in fetching the feed: %v\n", err)
+		return
+	}
+
+	for _, item := range feedData.Channel.Item {
+		fmt.Println(item.Title)
+	}
 }

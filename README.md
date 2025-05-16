@@ -41,21 +41,29 @@ goose postgres {YOUR CONN STRING} up
 
 Gator has a list of commands you can use to aggregate your RSS feeds!
 
-| command   | Description                                             | Argument                 | Example                                                        |
-| --------- | ------------------------------------------------------- | ------------------------ | -------------------------------------------------------------- |
-| register  | Creates a user by the given name                        | \<your-name>             | gator register "john go"                                       |
-| login     | Logs into the account of the given name                 | \<your-name>             | gator login "john go"                                          |
-| reset     | Resets your db                                          | None                     | gator reset                                                    |
-| users     | Lists all users that have been registered               | None                     | gator users                                                    |
-| addfeed   | Adds and follows a feed for the current logged in user  | \<feed-name> \<feed-url> | gator addfeed "Hacker News" "https://news.ycombinator.com/rss" |
-| feeds     | Lists all feeds that have been added                    | None                     | gator feeds                                                    |
-| follow    | Follow a feed that has already been added               | \<feed-url>              | gator follow "https://news.ycombinator.com/rss                 |
-| following | Lists all feeds that the current logged in user follows | None                     | gator following                                                |
-| unfollow  | Unfollow a feed                                         | \<feed-url>              | gator unfollow "https://news.ycombinator.com/rss               |
-| browse    | Browse a list of posts from the feeds you follow        | OPTIONAL \<limit>        | gator browse 3                                                 |
+| command   | Description                                                                                 | Argument                 | Example                                                        |
+| --------- | ------------------------------------------------------------------------------------------- | ------------------------ | -------------------------------------------------------------- |
+| register  | Creates a user by the given name                                                            | \<your-name>             | gator register "john go"                                       |
+| login     | Logs into the account of the given name                                                     | \<your-name>             | gator login "john go"                                          |
+| reset     | Resets your db                                                                              | None                     | gator reset                                                    |
+| users     | Lists all users that have been registered                                                   | None                     | gator users                                                    |
+| addfeed   | Adds and follows a feed for the current logged in user                                      | \<feed-name> \<feed-url> | gator addfeed "Hacker News" "https://news.ycombinator.com/rss" |
+| feeds     | Lists all feeds that have been added                                                        | None                     | gator feeds                                                    |
+| agg       | Sends a GET Request to all the feeds to fetch Post Data one in the specified time interval. | \<time-interval>         | gator agg 1m                                                   |
+| follow    | Follow a feed that has already been added                                                   | \<feed-url>              | gator follow "https://news.ycombinator.com/rss                 |
+| following | Lists all feeds that the current logged in user follows                                     | None                     | gator following                                                |
+| unfollow  | Unfollow a feed                                                                             | \<feed-url>              | gator unfollow "https://news.ycombinator.com/rss               |
+| browse    | Browse a list of posts from the feeds you follow                                            | OPTIONAL \<limit>        | gator browse 3                                                 |
 
-Note: The browse command is the only command that has an optional argument. If
-no argument has been specified it will use 2 by default.
+> [!CAUTION]
+> The agg command sends a request to the feed that was fetched the longest time
+> ago. Do not specify a short interval for this. Doing this can potentially DOS
+> the server, which is something I do not condone. I am not responsible for the
+> repercussions if you choose to use this CLI to commit such actions!
+
+> [!NOTE]
+> The browse command is the only command that has an optional argument. If no
+> argument has been specified it will use 2 by default.
 
 ## Issues
 

@@ -35,7 +35,7 @@ func main() {
 		Callback: make(map[string]func(*state.State, command.Command) error),
 	}
 
-	cmds.Register("login", handlerLogin)
+	cmds.Register("login", handleLogin)
 	cmds.Register("register", handleRegister)
 	cmds.Register("reset", handleReset)
 	cmds.Register("users", handleList)
@@ -45,6 +45,7 @@ func main() {
 	cmds.Register("follow", middlewareLoggedIn(handleFollow))
 	cmds.Register("following", middlewareLoggedIn(handleFollowing))
 	cmds.Register("unfollow", middlewareLoggedIn(handleUnfollow))
+	cmds.Register("browse", middlewareLoggedIn(handleBrowse))
 
 	args := os.Args
 

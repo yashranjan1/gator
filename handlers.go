@@ -6,17 +6,19 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"strconv"
 	"text/tabwriter"
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/lib/pq"
 	"github.com/yashranjan1/gator/internal/command"
 	"github.com/yashranjan1/gator/internal/database"
 	"github.com/yashranjan1/gator/internal/rss"
 	"github.com/yashranjan1/gator/internal/state"
 )
 
-func handlerLogin(s *state.State, cmd command.Command) error {
+func handleLogin(s *state.State, cmd command.Command) error {
 	if len(cmd.Args) == 0 {
 		return errors.New("the login handler expects a single argument, the username")
 	}
@@ -286,6 +288,61 @@ func scrapeFeeds(s *state.State) {
 	}
 
 	for _, item := range feedData.Channel.Item {
+		postParams := database.CreatePostsParams{
+			ID:          uuid.New(),
+			CreatedAt:   time.Now(),
+			UpdatedAt:   time.Now(),
+			Title:       item.Title,
+			Url:         item.Link,
+			Description: item.Description,
+			PublishedAt: item.PubDate,
+			FeedID:      feed.ID,
+		}
+		err := s.DataBase.CreatePosts(context.Background(), postParams)
+		if err != nil {
+			pqErr, ok := err.(*pq.Error)
+
+			// this bit is specifically done so it ignore errors caused by the unique url constraint
+			// because we are going to make calls that will cause duplicate insertions
+			if ok {
+				if pqErr.Code != "23505" {
+					fmt.Println(err)
+				}
+			} else {
+				fmt.Println(err)
+			}
+		}
 		fmt.Println(item.Title)
 	}
+}
+
+func handleBrowse(s *state.State, cmd command.Command, user database.User) error {
+	limit := 2
+
+	if len(cmd.Args) > 0 {
+		i, err := strconv.Atoi(cmd.Args[0])
+		if err != nil {
+			return errors.New("the browse handler expects an integer argument")
+		}
+
+		limit = i
+	}
+
+	postsParams := database.GetPostsForUserParams{
+		UserID: user.ID,
+		Limit:  int32(limit),
+	}
+	posts, err := s.DataBase.GetPostsForUser(context.Background(), postsParams)
+	if err != nil {
+		return err
+	}
+
+	for _, post := range posts {
+		fmt.Printf("Title: %s\n", post.Title)
+		fmt.Printf("URL: %s\n", post.Url)
+		fmt.Printf("Published On: %s\n", post.PublishedAt)
+		fmt.Println()
+	}
+
+	return nil
 }
